@@ -1,0 +1,41 @@
+# Load SharePoint PowerShell module
+Add-PSSnapin Microsoft.SharePoint.PowerShell -ErrorAction SilentlyContinue
+ 
+# Variables
+$siteUrl = "http://partnerspace.lendlease.com/L1/AUST_Services_Transition"  # Replace with your SharePoint site URL
+$outputFile = "G:\SURAMP\SiteFilePaths.csv"  # Path to save the CSV file
+ 
+# Get site object
+$site = Get-SPSite $siteUrl
+$web = $site.RootWeb
+ 
+# Prepare array to hold file paths
+$filePaths = @()
+ 
+# Loop through all lists on the site
+foreach ($list in $web.Lists) {
+    # Check if the list is a document library
+    if ($list.BaseType -eq "DocumentLibrary") {
+        # Loop through all items in the document library
+        foreach ($item in $list.Items) {
+            # Get the file path
+            if ($item.File) {
+                $filePath = $item.File.ServerRelativeUrl
+                $filePaths += [pscustomobject]@{
+                    "Library"   = $list.Title
+                    "FileName"  = $item.File.Name
+                    "FullPath"  = $filePath
+                }
+            }
+        }
+    }
+}
+ 
+# Export file paths to CSV
+$filePaths | Export-Csv -Path $outputFile -NoTypeInformation -Encoding UTF8
+ 
+# Dispose of objects to free up resources
+$web.Dispose()
+$site.Dispose()
+ 
+Write-Output "File paths from all document libraries exported to $outputFile"
